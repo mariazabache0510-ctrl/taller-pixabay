@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Taller Pixabay · Galería con filtro antisesgo</title>
+  <meta name="description" content="Búsqueda de imágenes en Pixabay con filtro contra sesgos y registro en MongoDB.">
+  <meta name="theme-color" content="#143d3c">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,560;9..144,680&family=Outfit:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/estilos.css">
+</head>
+<body
+  data-pixabay="<%= configuracion.pixabay ? '1' : '0' %>"
+  data-mongo="<%= configuracion.mongo ? '1' : '0' %>"
+  data-espejo="<%= configuracion.espejo ? '1' : '0' %>"
+>
+  <a class="saltar" href="#consulta">Saltar al buscador</a>
+  <header class="cabecera">
+    <p class="ceja">Taller práctico · API y filtrado de sesgos</p>
+    <h1>Galería con filtro antisesgo</h1>
+    <p class="lead">Busca fotos de Pixabay en esta misma página. Las consultas que pueden reforzar un estereotipo, o mostrar el rostro de un menor, se detienen antes de salir del servidor.</p>
+  </header>
+
+  <% if (!configuracion.pixabay || !configuracion.mongo) { %>
+    <section class="pendiente" role="status">
+      <h2>Falta configuración del servidor</h2>
+      <ul>
+        <% if (!configuracion.pixabay) { %><li>Agrega <code>PIXABAY_API_KEY</code> para pedir imágenes.</li><% } %>
+        <% if (!configuracion.mongo) { %><li>Agrega <code>MONGODB_URI</code> para guardar el historial y la colección.</li><% } %>
+      </ul>
+    </section>
+  <% } %>
+
+  <div class="paneles">
+    <section class="tarjeta-panel buscador" aria-labelledby="titulo-buscador">
+      <div class="cabeza-panel">
+        <h2 id="titulo-buscador">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10" cy="10" r="6"></circle><path d="M14.5 14.5 L20 20"></path></svg>
+          Buscador con filtro algorítmico
+        </h2>
+        <p class="insignia"><span class="punto"></span> Filtro antisesgo: activo</p>
+      </div>
+      <form id="formulario">
+        <label class="sr" for="consulta">Palabra clave</label>
+        <div class="fila">
+          <input id="consulta" name="consulta" type="search" maxlength="80" autocomplete="off" placeholder="Escribe una palabra clave (ej. nature, ciudad, tecnología)…" enterkeyhint="search">
+          <button class="boton boton-principal" type="submit">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10" cy="10" r="6"></circle><path d="M14.5 14.5 L20 20"></path></svg>
+            Buscar
+          </button>
+        </div>
+      </form>
+      <p class="ayuda">Palabras clave de prueba</p>
+      <div class="chips">
+        <button class="chip chip-sensible" type="button" data-consulta="BLACK">BLACK</button>
+        <button class="chip chip-sensible" type="button" data-consulta="POOR">POOR</button>
+        <button class="chip" type="button" data-consulta="NATURE">NATURE</button>
+        <button class="chip" type="button" data-consulta="TECHNOLOGY">TECHNOLOGY</button>
+      </div>
+      <p id="aviso" class="aviso" role="status" hidden></p>
+    </section>
+
+    <aside class="tarjeta-panel objetivo">
+      <p class="nota">Nota del taller</p>
+      <h2>Objetivo del taller</h2>
+      <ul>
+        <li><strong>Filtro algorítmico.</strong> Al ingresar BLACK, POOR u otro término sensible, la aplicación intercepta la solicitud para no generar ni reforzar sesgos.</li>
+        <li><strong>API de Pixabay.</strong> Las fotos permitidas se pintan en esta misma vista, sin cambiar de página.</li>
+        <li><strong>MongoDB.</strong> Cada búsqueda y cada foto guardada queda en una colección, con copia en el espejo si está configurado.</li>
+      </ul>
+      <p class="enlace-api">Enlace API: <a href="https://pixabay.com/es/" target="_blank" rel="noreferrer">pixabay.com/es</a></p>
+    </aside>
+  </div>
+
+  <section class="resultados" aria-labelledby="titulo-resultados">
+    <div class="barra-resultados">
+      <div class="pestanas" role="tablist" aria-label="Vistas de resultados">
+        <button id="tab-galeria" class="pestana" type="button" role="tab" aria-selected="true" aria-controls="galeria">Galería Pixabay <span id="cuenta-galeria">(0)</span></button>
+        <button id="tab-coleccion" class="pestana" type="button" role="tab" aria-selected="false" aria-controls="coleccion" tabindex="-1">Colección MongoDB <span id="cuenta-coleccion">(0)</span></button>
+      </div>
+      <p id="estado-datos" class="estado-datos"></p>
+    </div>
+    <h2 id="titulo-resultados" class="sr">Resultados</h2>
+    <div id="galeria" class="cuadricula" role="tabpanel" aria-labelledby="tab-galeria"></div>
+    <div id="coleccion" class="panel-coleccion" role="tabpanel" aria-labelledby="tab-coleccion" hidden></div>
+  </section>
+
+  <footer class="pie">
+    <p>Las fotos se muestran desde Pixabay. En la base solo se guarda la ficha: identificador, etiquetas, autor y enlaces.</p>
+  </footer>
+  <script src="/js/app.js" defer></script>
+</body>
+</html>
