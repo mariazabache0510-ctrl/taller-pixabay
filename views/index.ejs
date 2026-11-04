@@ -6,6 +6,7 @@
   <title>Taller Pixabay · Galería con filtro antisesgo</title>
   <meta name="description" content="Búsqueda de imágenes en Pixabay con filtro contra sesgos y registro en MongoDB.">
   <meta name="theme-color" content="#143d3c">
+  <meta name="csrf-token" content="<%= csrf %>">
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -27,10 +28,7 @@
   <% if (!configuracion.pixabay || !configuracion.mongo) { %>
     <section class="pendiente" role="status">
       <h2>Falta configuración del servidor</h2>
-      <ul>
-        <% if (!configuracion.pixabay) { %><li>Agrega <code>PIXABAY_API_KEY</code> para pedir imágenes.</li><% } %>
-        <% if (!configuracion.mongo) { %><li>Agrega <code>MONGODB_URI</code> para guardar el historial y la colección.</li><% } %>
-      </ul>
+      <p>Quien administra el sitio debe completar la configuración antes de buscar o archivar.</p>
     </section>
   <% } %>
 

@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 const { definirModelos } = require('./modelos');
+const { mensajeSeguro } = require('./registro');
 
 let modelos = null;
 let modelosEspejo = null;
@@ -11,25 +12,16 @@ async function abrir(uri) {
 }
 
 async function conectar() {
-  const uri = process.env.MONGODB_URI || '';
-  const uriEspejo = process.env.MONGODB_URI_MIRROR || '';
-
-  if (uri) {
-    try {
-      modelos = await abrir(uri);
-    } catch (error) {
-      modelos = null;
-      console.error('No se pudo abrir MongoDB principal:', error.message);
-    }
-  }
-
-  if (uriEspejo) {
-    try {
-      modelosEspejo = await abrir(uriEspejo);
-    } catch (error) {
-      modelosEspejo = null;
-      console.error('No se pudo abrir el espejo:', error.message);
-    }
+  const uri = String(process.env.MONGODB_URI || '').trim();
+  const uriEspejo = String(process.env.MONGODB_URI_MIRROR || '').trim();
+  if (!uri) throw new Error('Falta MONGODB_URI');
+  modelos = await abrir(uri);
+  if (!uriEspejo) return;
+  try {
+    modelosEspejo = await abrir(uriEspejo);
+  } catch (error) {
+    modelosEspejo = null;
+    console.error('No se pudo abrir el espejo:', mensajeSeguro(error));
   }
 }
 
@@ -52,7 +44,7 @@ async function enAmbas(accion) {
     try {
       await accion(modelosEspejo);
     } catch (error) {
-      console.error('El espejo no replicó el cambio:', error.message);
+      console.error('El espejo no replicó el cambio:', mensajeSeguro(error));
     }
   }
   return resultado;

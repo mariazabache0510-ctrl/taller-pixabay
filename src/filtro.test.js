@@ -11,6 +11,11 @@ test('intercepta BLACK, POOR y sus equivalentes', () => {
   assert.equal(evaluar('NATURE').bloqueada, false);
   assert.equal(evaluar('technology').bloqueada, false);
   assert.equal(evaluar('ciudad de noche').bloqueada, false);
+  assert.equal(evaluar('  POOR   people').motivo, 'socioeconomico');
+  assert.equal(evaluar('bl4ck').motivo, 'racial');
+  assert.equal(evaluar('p0or').motivo, 'socioeconomico');
+  assert.equal(evaluar('b.l.a.c.k').motivo, 'racial');
+  assert.equal(evaluar('niña').motivo, 'menores');
 });
 
 test('intercepta menores y revisa etiquetas por palabra', () => {

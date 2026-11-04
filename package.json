@@ -7,14 +7,25 @@
     "node": ">=20"
   },
   "scripts": {
+    "build": "node scripts/build-cliente.js",
+    "prestart": "node scripts/build-cliente.js",
     "start": "node server.js",
-    "dev": "node --watch server.js",
-    "test": "node --test src/filtro.test.js src/app.test.js"
+    "dev": "npm run build && node --watch server.js",
+    "test": "node --test src/filtro.test.js src/registro.test.js src/app.test.js"
   },
   "dependencies": {
+    "connect-mongo": "^5.1.0",
     "dotenv": "^16.4.7",
     "ejs": "^3.1.10",
+    "esbuild": "^0.25.11",
     "express": "^4.21.2",
+    "express-rate-limit": "^7.5.0",
+    "express-session": "^1.18.1",
+    "helmet": "^8.1.0",
+    "javascript-obfuscator": "^4.1.1",
     "mongoose": "^8.9.5"
+  },
+  "overrides": {
+    "minimatch": "11.0.1"
   }
 }

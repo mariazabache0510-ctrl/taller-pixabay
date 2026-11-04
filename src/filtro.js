@@ -1,6 +1,4 @@
-// El taller pide interceptar BLACK, POOR y términos parecidos antes de llamar a Pixabay.
-// La misma capa frena búsquedas de menores: la galería no debe mostrar su rostro.
-// Se compara por palabra completa, sin tildes y en minúsculas.
+const LEET = { 0: 'o', 1: 'i', 3: 'e', 4: 'a', 5: 's', 7: 't', '@': 'a' };
 
 const RACIALES = new Set([
   'black', 'negro', 'negra', 'negros', 'negras',
@@ -47,16 +45,39 @@ const MENSAJES = {
   menores: 'No mostramos fotografías de niñas, niños ni adolescentes. Esa búsqueda no se envió a Pixabay.',
 };
 
+function aplicarLeet(texto) {
+  return texto.replace(/[013457@]/g, (letra) => LEET[letra]);
+}
+
 function normalizar(texto) {
-  return String(texto || '')
-    .normalize('NFD')
-    .replace(/\p{M}/gu, '')
-    .toLowerCase()
-    .trim();
+  return aplicarLeet(
+    String(texto || '')
+      .normalize('NFD')
+      .replace(/\p{M}/gu, '')
+      .toLowerCase(),
+  ).replace(/\s+/g, ' ').trim();
+}
+
+function unirLetrasSueltas(lista) {
+  const salida = [];
+  let acumulado = '';
+  const soltar = () => {
+    if (acumulado.length > 1) salida.push(acumulado);
+    acumulado = '';
+  };
+  lista.forEach((token) => {
+    if (token.length === 1 && /[a-z]/.test(token)) acumulado += token;
+    else {
+      soltar();
+      salida.push(token);
+    }
+  });
+  soltar();
+  return salida;
 }
 
 function tokens(texto) {
-  return normalizar(texto).split(/[^a-z0-9]+/).filter(Boolean);
+  return unirLetrasSueltas(normalizar(texto).split(/[^a-z0-9]+/).filter(Boolean));
 }
 
 function motivoDe(conjunto, frase) {

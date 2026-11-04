@@ -1,5 +1,10 @@
+process.env.NODE_ENV = 'test';
+process.env.SESSION_SECRET = process.env.SESSION_SECRET || 'solo-para-la-suite-de-pruebas-32bytes!!';
+
 const test = require('node:test');
 const assert = require('node:assert/strict');
+const fs = require('fs');
+const path = require('path');
 const { createApp } = require('./app');
 
 async function conServidor(prueba) {
@@ -16,15 +21,20 @@ async function conServidor(prueba) {
   }
 }
 
+async function sesion(port) {
+  const inicio = await fetch(`http://127.0.0.1:${port}/`);
+  const html = await inicio.text();
+  const token = html.match(/name="csrf-token" content="([a-f0-9]{64})"/);
+  const cookie = (inicio.headers.getSetCookie?.() || []).map((parte) => parte.split(';')[0]).join('; ');
+  return { html, token: token && token[1], cookie };
+}
+
 test('la salud responde y BLACK no sale de la aplicación', async () => {
   await conServidor(async (port) => {
     const salud = await fetch(`http://127.0.0.1:${port}/health`);
     assert.equal(salud.status, 200);
-    const respuesta = await fetch(`http://127.0.0.1:${port}/api/buscar`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ consulta: 'BLACK' }),
-    });
+    assert.equal(salud.headers.get('x-powered-by'), null);
+    const respuesta = await fetch(`http://127.0.0.1:${port}/api/buscar?q=BLACK`);
     const datos = await respuesta.json();
     assert.equal(respuesta.status, 200);
     assert.equal(datos.bloqueada, true);
@@ -33,19 +43,21 @@ test('la salud responde y BLACK no sale de la aplicación', async () => {
   });
 });
 
-test('una búsqueda permitida explica si falta la clave', async () => {
+test('poor, variantes y una búsqueda sin clave no revelan secretos', async () => {
   const anterior = process.env.PIXABAY_API_KEY;
   delete process.env.PIXABAY_API_KEY;
   try {
     await conServidor(async (port) => {
-      const respuesta = await fetch(`http://127.0.0.1:${port}/api/buscar`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ consulta: 'nature' }),
-      });
-      const datos = await respuesta.json();
-      assert.equal(respuesta.status, 503);
-      assert.equal(datos.codigo, 'sin-clave');
+      const poor = await (await fetch(`http://127.0.0.1:${port}/api/buscar?q=${encodeURIComponent('poor people')}`)).json();
+      const variante = await (await fetch(`http://127.0.0.1:${port}/api/buscar?q=bl4ck`)).json();
+      assert.equal(poor.bloqueada, true);
+      assert.equal(variante.bloqueada, true);
+      const nature = await fetch(`http://127.0.0.1:${port}/api/buscar?q=nature`);
+      const datos = await nature.json();
+      assert.equal(nature.status, 503);
+      assert.equal(JSON.stringify(datos).includes('PIXABAY'), false);
+      const larga = await fetch(`http://127.0.0.1:${port}/api/buscar?q=${'a'.repeat(101)}`);
+      assert.equal(larga.status, 400);
     });
   } finally {
     if (anterior === undefined) delete process.env.PIXABAY_API_KEY;
@@ -53,11 +65,23 @@ test('una búsqueda permitida explica si falta la clave', async () => {
   }
 });
 
-test('rechaza fichas que no vienen de Pixabay', async () => {
+test('rechaza fichas ajenas y escrituras sin CSRF', async () => {
   await conServidor(async (port) => {
+    const { token, cookie } = await sesion(port);
+    assert.ok(token);
+    const sinToken = await fetch(`http://127.0.0.1:${port}/api/coleccion`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', cookie },
+      body: JSON.stringify({
+        pixabayId: 10,
+        paginaUrl: 'https://ejemplo.com/foto',
+        vistaUrl: 'https://ejemplo.com/foto.jpg',
+      }),
+    });
+    assert.equal(sinToken.status, 403);
     const respuesta = await fetch(`http://127.0.0.1:${port}/api/coleccion`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', cookie, 'X-CSRF-Token': token },
       body: JSON.stringify({
         pixabayId: 10,
         paginaUrl: 'https://ejemplo.com/foto',
@@ -65,5 +89,37 @@ test('rechaza fichas que no vienen de Pixabay', async () => {
       }),
     });
     assert.equal(respuesta.status, 400);
+    const objeto = await fetch(`http://127.0.0.1:${port}/api/historial`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', cookie, 'X-CSRF-Token': token },
+      body: JSON.stringify({ consulta: { $gt: '' } }),
+    });
+    assert.equal(objeto.status, 400);
+  });
+});
+
+test('los archivos sensibles del proyecto responden 404', async () => {
+  await conServidor(async (port) => {
+    for (const ruta of ['/.env', '/server.js', '/package.json', '/src/filtro.js', '/.git/config']) {
+      const respuesta = await fetch(`http://127.0.0.1:${port}${ruta}`);
+      assert.equal(respuesta.status, 404, ruta);
+      const texto = await respuesta.text();
+      assert.equal(texto.includes('SESSION_SECRET'), false);
+    }
+  });
+});
+
+test('la página y el cliente no incluyen la lista ni credenciales', async () => {
+  const cliente = fs.readFileSync(path.join(__dirname, 'cliente', 'app.js'), 'utf8');
+  const vista = fs.readFileSync(path.join(__dirname, '..', 'views', 'index.ejs'), 'utf8');
+  for (const prohibido of ['nigger', 'PIXABAY_API_KEY', 'mongodb+srv', 'SESSION_SECRET', 'MONGODB_URI']) {
+    assert.equal(cliente.includes(prohibido), false, prohibido);
+    assert.equal(vista.includes(prohibido), false, prohibido);
+  }
+  await conServidor(async (port) => {
+    const { html } = await sesion(port);
+    assert.equal(html.includes('nigger'), false);
+    assert.equal(html.includes('PIXABAY_API_KEY'), false);
+    assert.match(html, /csrf-token/);
   });
 });

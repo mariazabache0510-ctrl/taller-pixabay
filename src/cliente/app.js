@@ -13,11 +13,23 @@ const guardadas = new Set();
 let temporizador = 0;
 let solicitud = 0;
 
+function tokenCsrf() {
+  const meta = document.querySelector('meta[name="csrf-token"]');
+  return meta ? meta.getAttribute('content') || '' : '';
+}
+
+function cabecerasJson() {
+  return {
+    'Content-Type': 'application/json',
+    'X-CSRF-Token': tokenCsrf(),
+  };
+}
+
 const mongo = document.body.dataset.mongo === '1';
 const espejo = document.body.dataset.espejo === '1';
 estadoDatos.textContent = mongo
-  ? (espejo ? 'Mongo principal y espejo conectados.' : 'Mongo principal conectado. El espejo no está configurado.')
-  : 'Sin base de datos: las búsquedas no se podrán archivar.';
+  ? (espejo ? 'El archivo principal y su copia están disponibles.' : 'El archivo de búsquedas está disponible.')
+  : 'Las búsquedas de esta visita no se pueden archivar todavía.';
 
 formulario.addEventListener('submit', (evento) => {
   evento.preventDefault();
@@ -82,11 +94,7 @@ async function buscar(texto) {
   }
   mostrar('galeria');
   try {
-    const respuesta = await fetch('/api/buscar', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ consulta }),
-    });
+    const respuesta = await fetch(`/api/buscar?q=${encodeURIComponent(consulta)}`);
     const datos = await respuesta.json();
     if (id !== solicitud) return;
     if (!respuesta.ok) {
@@ -94,15 +102,16 @@ async function buscar(texto) {
       decir(datos.mensaje || 'No se pudo buscar.', true);
       return;
     }
+    const persistencia = await archivar(consulta, datos);
     if (datos.bloqueada) {
-      const extra = datos.persistencia ? '' : ' No quedó archivada: falta MongoDB.';
+      const extra = persistencia ? '' : ' No se pudo archivar esta búsqueda.';
       pintarVacio(galeria, `${datos.mensaje}${extra}`);
       decir(`${datos.mensaje}${extra}`, true);
       cuentaGaleria.textContent = '(0)';
       return;
     }
-    if (!datos.persistencia) {
-      decir('La búsqueda se hizo, pero no quedó guardada porque falta MongoDB.', true);
+    if (!persistencia) {
+      decir(datos.mensaje ? `${datos.mensaje} No se pudo archivar esta búsqueda.` : 'La búsqueda se hizo, pero no se pudo archivar.', true);
     } else if (datos.mensaje) {
       decir(datos.mensaje, false);
     }
@@ -113,6 +122,24 @@ async function buscar(texto) {
     decir('No hay conexión con el servidor.', true);
   } finally {
     if (id === solicitud) galeria.removeAttribute('aria-busy');
+  }
+}
+
+async function archivar(consulta, datos) {
+  try {
+    const respuesta = await fetch('/api/historial', {
+      method: 'POST',
+      headers: cabecerasJson(),
+      body: JSON.stringify({
+        consulta,
+        idsPixabay: datos.bloqueada ? [] : (datos.imagenes || []).map((imagen) => imagen.pixabayId),
+      }),
+    });
+    if (!respuesta.ok) return false;
+    const cuerpo = await respuesta.json();
+    return Boolean(cuerpo.persistencia);
+  } catch {
+    return false;
   }
 }
 
@@ -192,10 +219,13 @@ async function alternar(imagen, boton) {
   boton.disabled = true;
   try {
     const respuesta = guardada
-      ? await fetch(`/api/coleccion/${imagen.pixabayId}`, { method: 'DELETE' })
+      ? await fetch(`/api/coleccion/${imagen.pixabayId}`, {
+        method: 'DELETE',
+        headers: cabecerasJson(),
+      })
       : await fetch('/api/coleccion', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: cabecerasJson(),
         body: JSON.stringify(imagen),
       });
     const datos = await respuesta.json().catch(() => ({}));
@@ -248,7 +278,7 @@ function pintarColeccion(datos) {
     vacio.className = 'vacio';
     vacio.textContent = datos.mongo
       ? 'Todavía no guardas fotos. Elige una en la galería: se archiva la ficha, no el archivo.'
-      : 'Conecta MONGODB_URI para crear la colección de esta visita.';
+      : 'El archivo de esta visita todavía no está disponible.';
     cuadricula.append(vacio);
   } else {
     imagenes.forEach((imagen, indice) => cuadricula.append(tarjeta(imagen, indice, true)));

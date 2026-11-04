@@ -1,24 +1,13 @@
 const crypto = require('crypto');
 
-function leerCookie(req, nombre) {
-  const crudo = req.headers.cookie || '';
-  const pareja = crudo.split(';').map((parte) => parte.trim()).find((parte) => parte.startsWith(`${nombre}=`));
-  if (!pareja) return '';
-  try {
-    return decodeURIComponent(pareja.slice(nombre.length + 1));
-  } catch {
-    return '';
+function asegurarVisitante(req) {
+  if (!req.session.visitanteId || !/^[a-f0-9]{32}$/.test(req.session.visitanteId)) {
+    req.session.visitanteId = crypto.randomBytes(16).toString('hex');
   }
-}
-
-function asegurarVisitante(req, res) {
-  let id = leerCookie(req, 'vid');
-  if (!/^[a-f0-9]{32}$/.test(id)) {
-    id = crypto.randomBytes(16).toString('hex');
-    const seguro = process.env.NODE_ENV === 'production' ? '; Secure' : '';
-    res.setHeader('Set-Cookie', `vid=${id}; HttpOnly; SameSite=Lax; Path=/; Max-Age=31536000${seguro}`);
+  if (!/^[a-f0-9]{64}$/.test(req.session.csrf || '')) {
+    req.session.csrf = crypto.randomBytes(32).toString('hex');
   }
-  return id;
+  return req.session.visitanteId;
 }
 
 module.exports = { asegurarVisitante };

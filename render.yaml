@@ -3,7 +3,7 @@ services:
     name: taller-pixabay
     runtime: node
     plan: free
-    buildCommand: npm install
+    buildCommand: npm install && npm run build
     startCommand: npm start
     healthCheckPath: /health
     envVars:
@@ -16,4 +16,8 @@ services:
       - key: MONGODB_URI_MIRROR
         sync: false
       - key: PIXABAY_API_KEY
+        sync: false
+      - key: SESSION_SECRET
+        generateValue: true
+      - key: APP_ORIGIN
         sync: false

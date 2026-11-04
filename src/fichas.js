@@ -18,11 +18,13 @@ function entero(valor, maximo) {
 }
 
 function texto(valor, maximo) {
-  return String(valor || '').replace(/\s+/g, ' ').trim().slice(0, maximo);
+  if (typeof valor !== 'string') return '';
+  return valor.replace(/\s+/g, ' ').trim().slice(0, maximo);
 }
 
 function fichaEntrante(cuerpo) {
-  const pixabayId = entero(cuerpo && cuerpo.pixabayId, 999999999999);
+  if (!cuerpo || typeof cuerpo !== 'object' || Array.isArray(cuerpo)) return null;
+  const pixabayId = entero(cuerpo.pixabayId, 999999999999);
   const paginaUrl = urlDePixabay(cuerpo && cuerpo.paginaUrl);
   const previaUrl = urlDePixabay(cuerpo && cuerpo.previaUrl);
   const vistaUrl = urlDePixabay(cuerpo && cuerpo.vistaUrl);
