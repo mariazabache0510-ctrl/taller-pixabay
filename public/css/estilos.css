@@ -304,7 +304,23 @@ a:focus-visible,
 .enlace-api a { color: var(--teal-oscuro); font-weight: 600; }
 .enlace-api a:hover { color: var(--teal); }
 
+[hidden] { display: none !important; }
+
 .resultados { margin-top: 1.4rem; }
+
+.ventana {
+  background: var(--tarjeta);
+  border: 1px solid var(--linea);
+  border-radius: 28px;
+  box-shadow: var(--sombra);
+  padding: 1.05rem 1.1rem 1.25rem;
+  min-height: 420px;
+  scroll-margin-top: 1rem;
+}
+
+.vista { min-height: 240px; }
+
+.intro-coleccion { margin: 0 0 1rem; color: var(--tinta-suave); max-width: 68ch; }
 
 .barra-resultados {
   display: flex;

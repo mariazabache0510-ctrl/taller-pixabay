@@ -65,7 +65,7 @@ document.querySelector('.pestanas').addEventListener('keydown', (evento) => {
 pintarVacio(galeria, 'Escribe una palabra o usa una de prueba. Las fotos aparecen aquí.');
 cargarColeccion();
 
-function mostrar(cual) {
+function mostrar(cual, desplazar) {
   const esGaleria = cual === 'galeria';
   galeria.hidden = !esGaleria;
   coleccion.hidden = esGaleria;
@@ -74,6 +74,9 @@ function mostrar(cual) {
   tabGaleria.tabIndex = esGaleria ? 0 : -1;
   tabColeccion.tabIndex = esGaleria ? -1 : 0;
   if (!esGaleria) cargarColeccion();
+  if (desplazar) {
+    document.querySelector('#ventana-resultados').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
 }
 
 async function buscar(texto) {
@@ -239,7 +242,13 @@ async function alternar(imagen, boton) {
       marcarBoton(otro, !guardada);
     });
     cuentaColeccion.textContent = `(${guardadas.size})`;
-    decir(guardada ? 'Se quitó de la colección.' : 'Quedó guardada en MongoDB.', false);
+    if (guardada) {
+      decir('Se quitó de la colección.', false);
+      if (!coleccion.hidden) cargarColeccion();
+    } else {
+      decir('', false);
+      mostrar('coleccion', true);
+    }
   } catch {
     decir('No hay conexión con el servidor.', true);
   } finally {
@@ -270,6 +279,10 @@ async function cargarColeccion() {
 
 function pintarColeccion(datos) {
   coleccion.replaceChildren();
+  const intro = document.createElement('p');
+  intro.className = 'intro-coleccion';
+  intro.textContent = 'Aquí queda lo que eliges conservar en esta visita. MongoDB no guarda el archivo de la foto: guarda la ficha, con su identificador, etiquetas, autor y enlace. Abajo también está el historial de búsquedas.';
+  coleccion.append(intro);
   const cuadricula = document.createElement('div');
   cuadricula.className = 'cuadricula';
   const imagenes = datos.imagenes || [];

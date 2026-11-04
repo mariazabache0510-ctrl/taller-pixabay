@@ -67,23 +67,25 @@
       <ul>
         <li><strong>Filtro algorítmico.</strong> BLACK, POOR y otros términos sensibles siguen mostrando fotos de objetos, colores o lugares. Se descartan las de personas. Las búsquedas de menores no se envían.</li>
         <li><strong>API de Pixabay.</strong> Las fotos permitidas se pintan en esta misma vista, sin cambiar de página.</li>
-        <li><strong>MongoDB.</strong> Cada búsqueda y cada foto guardada queda en una colección, con copia en el espejo si está configurado.</li>
+        <li><strong>MongoDB.</strong> La colección es el archivo de esta visita: las fotos que guardas y las búsquedas que hiciste.</li>
       </ul>
       <p class="enlace-api">Enlace API: <a href="https://pixabay.com/es/" target="_blank" rel="noreferrer">pixabay.com/es</a></p>
     </aside>
   </div>
 
   <section class="resultados" aria-labelledby="titulo-resultados">
-    <div class="barra-resultados">
-      <div class="pestanas" role="tablist" aria-label="Vistas de resultados">
-        <button id="tab-galeria" class="pestana" type="button" role="tab" aria-selected="true" aria-controls="galeria">Galería Pixabay <span id="cuenta-galeria">(0)</span></button>
-        <button id="tab-coleccion" class="pestana" type="button" role="tab" aria-selected="false" aria-controls="coleccion" tabindex="-1">Colección MongoDB <span id="cuenta-coleccion">(0)</span></button>
-      </div>
-      <p id="estado-datos" class="estado-datos"></p>
-    </div>
     <h2 id="titulo-resultados" class="sr">Resultados</h2>
-    <div id="galeria" class="cuadricula" role="tabpanel" aria-labelledby="tab-galeria"></div>
-    <div id="coleccion" class="panel-coleccion" role="tabpanel" aria-labelledby="tab-coleccion" hidden></div>
+    <div class="ventana" id="ventana-resultados">
+      <div class="barra-resultados">
+        <div class="pestanas" role="tablist" aria-label="Vistas de resultados">
+          <button id="tab-galeria" class="pestana" type="button" role="tab" aria-selected="true" aria-controls="galeria">Galería Pixabay <span id="cuenta-galeria">(0)</span></button>
+          <button id="tab-coleccion" class="pestana" type="button" role="tab" aria-selected="false" aria-controls="coleccion" tabindex="-1">Colección MongoDB <span id="cuenta-coleccion">(0)</span></button>
+        </div>
+        <p id="estado-datos" class="estado-datos"></p>
+      </div>
+      <div id="galeria" class="vista cuadricula" role="tabpanel" aria-labelledby="tab-galeria"></div>
+      <div id="coleccion" class="vista" role="tabpanel" aria-labelledby="tab-coleccion" hidden></div>
+    </div>
   </section>
 
   <footer class="pie">
