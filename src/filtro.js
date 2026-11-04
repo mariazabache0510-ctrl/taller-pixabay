@@ -40,6 +40,30 @@ const PERSONAS = new Set([
   'retrato', 'cara', 'rostro', 'multitud',
 ]);
 
+const ESCENAS = new Map([
+  ['poor', 'casa sencilla moneda'],
+  ['poorer', 'casa sencilla moneda'],
+  ['poorest', 'casa sencilla moneda'],
+  ['poverty', 'casa sencilla moneda'],
+  ['pobre', 'casa sencilla moneda'],
+  ['pobres', 'casa sencilla moneda'],
+  ['pobreza', 'casa sencilla moneda'],
+  ['homeless', 'abrigo banca calle'],
+  ['indigente', 'abrigo banca calle'],
+  ['indigentes', 'abrigo banca calle'],
+  ['beggar', 'moneda taza'],
+  ['beggars', 'moneda taza'],
+  ['mendigo', 'moneda taza'],
+  ['mendigos', 'moneda taza'],
+  ['ghetto', 'casas barrio'],
+  ['gueto', 'casas barrio'],
+  ['slum', 'casas sencillas'],
+  ['slums', 'casas sencillas'],
+  ['favela', 'casas ladera'],
+  ['favelas', 'casas ladera'],
+  ['miseria', 'objeto usado'],
+]);
+
 const ESTEREOTIPOS = new Set([
   'homeless', 'beggar', 'beggars', 'slum', 'slums', 'ghetto', 'poverty',
   'favela', 'favelas', 'mendigo', 'mendigos', 'indigente', 'indigentes', 'miseria',
@@ -116,9 +140,14 @@ function reencuadrar(normalizada, motivo) {
   });
   const restos = [];
   let color = '';
+  let escena = '';
   tokens(frase).forEach((token) => {
     if (COLORES.has(token)) {
       color = COLORES.get(token);
+      return;
+    }
+    if (ESCENAS.has(token)) {
+      escena = ESCENAS.get(token);
       return;
     }
     if (RACIALES.has(token) || SOCIOECONOMICOS.has(token) || GENERO.has(token) || MENORES.has(token) || PERSONAS.has(token)) return;
@@ -126,8 +155,10 @@ function reencuadrar(normalizada, motivo) {
   });
   if (restos.length && color) return `${restos.join(' ')} ${color}`.slice(0, 100).trim();
   if (color) return `${color} textura objeto fondo`;
+  if (restos.length && escena) return `${restos.join(' ')} ${escena}`.slice(0, 100).trim();
+  if (escena) return `${escena} objeto`.slice(0, 100).trim();
   if (motivo === 'genero') return 'hogar objeto';
-  if (motivo === 'socioeconomico') return 'paisaje objeto';
+  if (motivo === 'socioeconomico') return 'casa sencilla objeto';
   return 'textura abstracta color';
 }
 

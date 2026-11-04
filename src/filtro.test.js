@@ -17,6 +17,9 @@ test('reencuadra BLACK, POOR y sus equivalentes hacia objetos y colores', () => 
   assert.equal(poor.bloqueada, false);
   assert.equal(poor.consultaPixabay.includes('poor'), false);
   assert.equal(evaluar('gente pobre').consultaPixabay.includes('pobre'), false);
+  assert.equal(evaluar('pobre').consultaPixabay.includes('casa sencilla'), true);
+  assert.equal(evaluar('pobre').consultaPixabay.includes('paisaje'), false);
+  assert.equal(evaluar('POOR').consultaPixabay.includes('luna'), false);
   assert.equal(evaluar('NATURE').bloqueada, false);
   assert.equal(evaluar('NATURE').filtrarPersonas, false);
   assert.equal(evaluar('technology').bloqueada, false);

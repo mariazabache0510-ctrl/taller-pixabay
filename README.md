@@ -34,7 +34,7 @@ No subas el archivo `.env`.
 
 Antes de llamar a Pixabay se revisa la frase, sin tildes y por palabra completa.
 
-- `black`, `negro`, `poor`, `pobre` y los demás términos de sesgo racial, socioeconómico o de género no se bloquean. La consulta que sale hacia Pixabay habla de color, objeto, textura o paisaje, y se descartan las fotos cuya etiqueta nombra a una persona o un estereotipo. Un insulto no se reenvía tal cual.
+- `black`, `negro`, `poor`, `pobre` y los demás términos de sesgo racial, socioeconómico o de género no se bloquean. La consulta que sale hacia Pixabay habla de color, objeto o de una escena cotidiana relacionada, como una casa sencilla, y se descartan las fotos cuya etiqueta nombra a una persona o un estereotipo. Un insulto no se reenvía tal cual.
 - Las búsquedas de menores (`child`, `baby`, `niño`, `niña`, `adolescente`, y equivalentes) sí se interceptan y no se envían.
 - Las búsquedas piden `safesearch=true` y fotos. Si una etiqueta nombra a un menor, esa foto se descarta.
 - El intento bloqueado igual se archiva, marcado como interceptado.
