@@ -3,10 +3,13 @@ const campo = document.querySelector('#consulta');
 const aviso = document.querySelector('#aviso');
 const galeria = document.querySelector('#galeria');
 const coleccion = document.querySelector('#coleccion');
+const historial = document.querySelector('#historial');
 const tabGaleria = document.querySelector('#tab-galeria');
 const tabColeccion = document.querySelector('#tab-coleccion');
+const tabHistorial = document.querySelector('#tab-historial');
 const cuentaGaleria = document.querySelector('#cuenta-galeria');
 const cuentaColeccion = document.querySelector('#cuenta-coleccion');
+const cuentaHistorial = document.querySelector('#cuenta-historial');
 const estadoDatos = document.querySelector('#estado-datos');
 
 const guardadas = new Set();
@@ -51,29 +54,36 @@ document.querySelectorAll('.chip').forEach((chip) => {
   });
 });
 
+const vistas = ['galeria', 'coleccion', 'historial'];
+const tabs = { galeria: tabGaleria, coleccion: tabColeccion, historial: tabHistorial };
+
 tabGaleria.addEventListener('click', () => mostrar('galeria'));
 tabColeccion.addEventListener('click', () => mostrar('coleccion'));
+tabHistorial.addEventListener('click', () => mostrar('historial'));
 
 document.querySelector('.pestanas').addEventListener('keydown', (evento) => {
   if (evento.key !== 'ArrowRight' && evento.key !== 'ArrowLeft') return;
+  const actual = vistas.findIndex((nombre) => tabs[nombre] === evento.target);
+  if (actual < 0) return;
   evento.preventDefault();
-  const siguiente = evento.target === tabGaleria ? 'coleccion' : 'galeria';
+  const paso = evento.key === 'ArrowRight' ? 1 : -1;
+  const siguiente = vistas[(actual + paso + vistas.length) % vistas.length];
   mostrar(siguiente);
-  (siguiente === 'galeria' ? tabGaleria : tabColeccion).focus();
+  tabs[siguiente].focus();
 });
 
 pintarVacio(galeria, 'Escribe una palabra o usa una de prueba. Las fotos aparecen aquí.');
 cargarColeccion();
 
 function mostrar(cual, desplazar) {
-  const esGaleria = cual === 'galeria';
-  galeria.hidden = !esGaleria;
-  coleccion.hidden = esGaleria;
-  tabGaleria.setAttribute('aria-selected', String(esGaleria));
-  tabColeccion.setAttribute('aria-selected', String(!esGaleria));
-  tabGaleria.tabIndex = esGaleria ? 0 : -1;
-  tabColeccion.tabIndex = esGaleria ? -1 : 0;
-  if (!esGaleria) cargarColeccion();
+  const paneles = { galeria, coleccion, historial };
+  vistas.forEach((nombre) => {
+    const activo = nombre === cual;
+    paneles[nombre].hidden = !activo;
+    tabs[nombre].setAttribute('aria-selected', String(activo));
+    tabs[nombre].tabIndex = activo ? 0 : -1;
+  });
+  if (cual !== 'galeria') cargarColeccion();
   if (desplazar) {
     document.querySelector('#ventana-resultados').scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
@@ -106,6 +116,7 @@ async function buscar(texto) {
       return;
     }
     const persistencia = await archivar(consulta, datos);
+    if (persistencia) cargarColeccion();
     if (datos.bloqueada) {
       const extra = persistencia ? '' : ' No se pudo archivar esta búsqueda.';
       pintarVacio(galeria, `${datos.mensaje}${extra}`);
@@ -158,7 +169,7 @@ function pintarGaleria(imagenes) {
 
 function tarjeta(imagen, indice, enColeccion) {
   const articulo = document.createElement('article');
-  articulo.className = 'tarjeta entra';
+  articulo.className = `tarjeta entra tono-${indice % 3}`;
   articulo.tabIndex = 0;
   articulo.style.animationDelay = `${indice * 45}ms`;
   articulo.dataset.id = String(imagen.pixabayId);
@@ -175,9 +186,13 @@ function tarjeta(imagen, indice, enColeccion) {
 
   const cuerpo = document.createElement('div');
   cuerpo.className = 'cuerpo';
-  const etiquetas = document.createElement('p');
+  const etiquetas = document.createElement('div');
   etiquetas.className = 'etiquetas';
-  etiquetas.textContent = presentarEtiquetas(imagen.etiquetas);
+  presentarEtiquetas(imagen.etiquetas).forEach((texto) => {
+    const pill = document.createElement('span');
+    pill.textContent = texto;
+    etiquetas.append(pill);
+  });
   const autor = document.createElement('p');
   autor.className = 'autor';
   autor.textContent = `Autor: ${imagen.autor || 'Pixabay'}`;
@@ -199,7 +214,10 @@ function tarjeta(imagen, indice, enColeccion) {
 
 function stat(nombre, valor) {
   const span = document.createElement('span');
-  span.textContent = `${nombre} ${Number(valor || 0).toLocaleString('es-CO')}`;
+  span.className = 'stat';
+  const numero = document.createElement('strong');
+  numero.textContent = Number(valor || 0).toLocaleString('es-CO');
+  span.append(numero, document.createTextNode(` ${nombre}`));
   return span;
 }
 
@@ -208,8 +226,7 @@ function presentarEtiquetas(texto) {
     .split(',')
     .map((parte) => parte.trim())
     .filter(Boolean)
-    .slice(0, 4)
-    .join(', ');
+    .slice(0, 3);
 }
 
 function marcarBoton(boton, guardada) {
@@ -261,19 +278,24 @@ async function cargarColeccion() {
     const respuesta = await fetch('/api/coleccion');
     const datos = await respuesta.json();
     if (!respuesta.ok) {
-      coleccion.replaceChildren(parrafo(datos.mensaje || 'No se pudo leer la colección.'));
+      const mensaje = datos.mensaje || 'No se pudo leer la colección.';
+      coleccion.replaceChildren(parrafo(mensaje));
+      historial.replaceChildren(parrafo(mensaje));
       return;
     }
     guardadas.clear();
     (datos.imagenes || []).forEach((imagen) => guardadas.add(imagen.pixabayId));
     cuentaColeccion.textContent = `(${guardadas.size})`;
     pintarColeccion(datos);
+    pintarHistorial(datos);
     document.querySelectorAll('.tarjeta .boton-guardar').forEach((boton) => {
       const id = Number(boton.closest('.tarjeta').dataset.id);
       marcarBoton(boton, guardadas.has(id));
     });
   } catch {
-    coleccion.replaceChildren(parrafo('No hay conexión con el servidor.'));
+    const mensaje = parrafo('No hay conexión con el servidor.');
+    coleccion.replaceChildren(mensaje);
+    historial.replaceChildren(mensaje.cloneNode(true));
   }
 }
 
@@ -281,7 +303,7 @@ function pintarColeccion(datos) {
   coleccion.replaceChildren();
   const intro = document.createElement('p');
   intro.className = 'intro-coleccion';
-  intro.textContent = 'Aquí queda lo que eliges conservar en esta visita. MongoDB no guarda el archivo de la foto: guarda la ficha, con su identificador, etiquetas, autor y enlace. Abajo también está el historial de búsquedas.';
+  intro.textContent = 'Aquí queda lo que eliges conservar en esta visita. MongoDB no guarda el archivo de la foto: guarda la ficha, con su identificador, etiquetas, autor y enlace.';
   coleccion.append(intro);
   const cuadricula = document.createElement('div');
   cuadricula.className = 'cuadricula';
@@ -297,42 +319,51 @@ function pintarColeccion(datos) {
     imagenes.forEach((imagen, indice) => cuadricula.append(tarjeta(imagen, indice, true)));
   }
   coleccion.append(cuadricula);
-
-  const historial = document.createElement('section');
-  historial.className = 'historial';
-  const titulo = document.createElement('h3');
-  titulo.textContent = 'Historial de búsquedas';
-  historial.append(titulo);
-  const lista = document.createElement('ul');
-  lista.className = 'lista-historial';
-  const busquedas = datos.busquedas || [];
-  if (!busquedas.length) {
-    const item = document.createElement('li');
-    item.className = 'item-historial';
-    item.tabIndex = 0;
-    item.textContent = 'Esta visita aún no tiene búsquedas archivadas.';
-    lista.append(item);
-  } else {
-    busquedas.forEach((busqueda) => lista.append(filaHistorial(busqueda)));
-  }
-  historial.append(lista);
-  coleccion.append(historial);
 }
 
-function filaHistorial(busqueda) {
-  const item = document.createElement('li');
-  item.className = 'item-historial';
-  item.tabIndex = 0;
+function pintarHistorial(datos) {
+  historial.replaceChildren();
+  const intro = document.createElement('p');
+  intro.className = 'intro-coleccion';
+  intro.textContent = 'Cada búsqueda de esta visita queda en su propia ventana. Pulsa una tarjeta para repetirla en la galería.';
+  historial.append(intro);
+  const lista = document.createElement('div');
+  lista.className = 'lista-historial';
+  const busquedas = datos.busquedas || [];
+  cuentaHistorial.textContent = `(${busquedas.length})`;
+  if (!busquedas.length) {
+    const vacio = document.createElement('p');
+    vacio.className = 'vacio';
+    vacio.textContent = datos.mongo
+      ? 'Esta visita aún no tiene búsquedas archivadas.'
+      : 'El archivo de esta visita todavía no está disponible.';
+    lista.append(vacio);
+  } else {
+    busquedas.forEach((busqueda, indice) => lista.append(filaHistorial(busqueda, indice)));
+  }
+  historial.append(lista);
+}
+
+function filaHistorial(busqueda, indice) {
+  const item = document.createElement('button');
+  item.type = 'button';
+  item.className = `item-historial entra tono-${indice % 3}`;
+  item.style.animationDelay = `${indice * 45}ms`;
   const texto = document.createElement('div');
   const fuerte = document.createElement('strong');
   fuerte.textContent = busqueda.consulta;
   const fecha = document.createElement('div');
+  fecha.className = 'cuando';
   fecha.textContent = new Date(busqueda.creadaEn).toLocaleString('es-CO');
   texto.append(fuerte, fecha);
   const marca = document.createElement('span');
   marca.className = busqueda.bloqueada ? 'marca bloqueo' : 'marca';
   marca.textContent = busqueda.bloqueada ? 'Interceptada' : `${busqueda.cantidad} fotos`;
   item.append(texto, marca);
+  item.addEventListener('click', () => {
+    campo.value = busqueda.consulta;
+    buscar(busqueda.consulta);
+  });
   return item;
 }
 

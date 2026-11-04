@@ -20,9 +20,10 @@
 >
   <a class="saltar" href="#consulta">Saltar al buscador</a>
   <header class="cabecera">
+    <div class="orbes" aria-hidden="true"><span class="orbe orbe-a"></span><span class="orbe orbe-b"></span><span class="orbe orbe-c"></span></div>
     <p class="ceja">Taller práctico · API y filtrado de sesgos</p>
-    <h1>Galería con filtro antisesgo</h1>
-    <p class="lead">Busca fotos de Pixabay en esta misma página. Las consultas que pueden reforzar un estereotipo, o mostrar el rostro de un menor, se detienen antes de salir del servidor.</p>
+    <h1><span class="palabra">Galería</span> <span class="palabra acento">con filtro</span> <span class="palabra">antisesgo</span></h1>
+    <p class="lead">Busca fotos de Pixabay en esta misma página. Las palabras sensibles muestran objetos y colores, y las búsquedas de menores no salen del servidor.</p>
   </header>
 
   <% if (!configuracion.pixabay || !configuracion.mongo) { %>
@@ -67,7 +68,7 @@
       <ul>
         <li><strong>Filtro algorítmico.</strong> BLACK, POOR y otros términos sensibles siguen mostrando fotos de objetos, colores o lugares. Se descartan las de personas. Las búsquedas de menores no se envían.</li>
         <li><strong>API de Pixabay.</strong> Las fotos permitidas se pintan en esta misma vista, sin cambiar de página.</li>
-        <li><strong>MongoDB.</strong> La colección es el archivo de esta visita: las fotos que guardas y las búsquedas que hiciste.</li>
+        <li><strong>MongoDB.</strong> La colección guarda las fotos que eliges. El historial, en su propia ventana, guarda las búsquedas.</li>
       </ul>
       <p class="enlace-api">Enlace API: <a href="https://pixabay.com/es/" target="_blank" rel="noreferrer">pixabay.com/es</a></p>
     </aside>
@@ -80,11 +81,13 @@
         <div class="pestanas" role="tablist" aria-label="Vistas de resultados">
           <button id="tab-galeria" class="pestana" type="button" role="tab" aria-selected="true" aria-controls="galeria">Galería Pixabay <span id="cuenta-galeria">(0)</span></button>
           <button id="tab-coleccion" class="pestana" type="button" role="tab" aria-selected="false" aria-controls="coleccion" tabindex="-1">Colección MongoDB <span id="cuenta-coleccion">(0)</span></button>
+          <button id="tab-historial" class="pestana" type="button" role="tab" aria-selected="false" aria-controls="historial" tabindex="-1">Historial <span id="cuenta-historial">(0)</span></button>
         </div>
         <p id="estado-datos" class="estado-datos"></p>
       </div>
       <div id="galeria" class="vista cuadricula" role="tabpanel" aria-labelledby="tab-galeria"></div>
       <div id="coleccion" class="vista" role="tabpanel" aria-labelledby="tab-coleccion" hidden></div>
+      <div id="historial" class="vista" role="tabpanel" aria-labelledby="tab-historial" hidden></div>
     </div>
   </section>
 
