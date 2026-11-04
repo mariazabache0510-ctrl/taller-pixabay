@@ -34,9 +34,9 @@ No subas el archivo `.env`.
 
 Antes de llamar a Pixabay se revisa la frase, sin tildes y por palabra completa.
 
-- Siempre se interceptan `black`, `poor`, `pobre` y equivalentes de sesgo racial, socioeconómico o de género (`negro`, `white`, `blanco`, `pobreza`, `homeless`, `ama de casa`, y otros del mismo grupo). Da igual que vayan acompañados de otra palabra: `black cat` también se detiene, como pide la nota del taller.
-- También se interceptan búsquedas de menores (`child`, `baby`, `niño`, `niña`, `adolescente`, y equivalentes).
-- Las búsquedas permitidas piden `safesearch=true` y fotos. Si una etiqueta nombra a un menor, esa foto se descarta.
+- `black`, `negro`, `poor`, `pobre` y los demás términos de sesgo racial, socioeconómico o de género no se bloquean. La consulta que sale hacia Pixabay habla de color, objeto, textura o paisaje, y se descartan las fotos cuya etiqueta nombra a una persona o un estereotipo. Un insulto no se reenvía tal cual.
+- Las búsquedas de menores (`child`, `baby`, `niño`, `niña`, `adolescente`, y equivalentes) sí se interceptan y no se envían.
+- Las búsquedas piden `safesearch=true` y fotos. Si una etiqueta nombra a un menor, esa foto se descarta.
 - El intento bloqueado igual se archiva, marcado como interceptado.
 
 `NATURE` y `TECHNOLOGY` pasan el filtro. El navegador llama a `GET /api/buscar?q=` en este mismo servidor; Pixabay no se consulta desde el cliente. Cada visita queda en una sesión firmada, sin registro. El JavaScript público se genera minificado y ofuscado con `npm run build` (también corre antes de `npm start`). No se publican source maps.

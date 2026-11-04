@@ -20,6 +20,31 @@ const GENERO = new Set([
   'housewife', 'housewives',
 ]);
 
+const COLORES = new Map([
+  ['black', 'color negro'],
+  ['negro', 'color negro'],
+  ['negra', 'color negro'],
+  ['negros', 'color negro'],
+  ['negras', 'color negro'],
+  ['white', 'color blanco'],
+  ['blanco', 'color blanco'],
+  ['blanca', 'color blanco'],
+  ['blancos', 'color blanco'],
+  ['blancas', 'color blanco'],
+]);
+
+const PERSONAS = new Set([
+  'person', 'people', 'man', 'woman', 'men', 'women', 'human', 'humans',
+  'portrait', 'face', 'faces', 'model', 'crowd', 'guy', 'lady',
+  'persona', 'personas', 'gente', 'hombre', 'hombres', 'mujer', 'mujeres',
+  'retrato', 'cara', 'rostro', 'multitud',
+]);
+
+const ESTEREOTIPOS = new Set([
+  'homeless', 'beggar', 'beggars', 'slum', 'slums', 'ghetto', 'poverty',
+  'favela', 'favelas', 'mendigo', 'mendigos', 'indigente', 'indigentes', 'miseria',
+]);
+
 const MENORES = new Set([
   'child', 'children', 'kid', 'kids', 'baby', 'babies',
   'infant', 'infants', 'toddler', 'toddlers', 'newborn', 'newborns',
@@ -38,12 +63,7 @@ const FRASES = [
   { texto: 'sexo debil', motivo: 'genero' },
 ];
 
-const MENSAJES = {
-  racial: 'Esa palabra puede sesgar las imágenes hacia un grupo racial. La búsqueda se interceptó y no se envió a Pixabay.',
-  socioeconomico: 'Esa palabra puede reforzar un estereotipo de pobreza. La búsqueda se interceptó y no se envió a Pixabay.',
-  genero: 'Esa palabra puede reforzar un estereotipo de género. La búsqueda se interceptó y no se envió a Pixabay.',
-  menores: 'No mostramos fotografías de niñas, niños ni adolescentes. Esa búsqueda no se envió a Pixabay.',
-};
+const MENSAJE_MENORES = 'No mostramos fotografías de niñas, niños ni adolescentes. Esa búsqueda no se envió a Pixabay.';
 
 function aplicarLeet(texto) {
   return texto.replace(/[013457@]/g, (letra) => LEET[letra]);
@@ -89,14 +109,40 @@ function motivoDe(conjunto, frase) {
   return hallada ? hallada.motivo : '';
 }
 
+function reencuadrar(normalizada, motivo) {
+  let frase = normalizada;
+  FRASES.forEach((entrada) => {
+    frase = frase.replaceAll(entrada.texto, ' ');
+  });
+  const restos = [];
+  let color = '';
+  tokens(frase).forEach((token) => {
+    if (COLORES.has(token)) {
+      color = COLORES.get(token);
+      return;
+    }
+    if (RACIALES.has(token) || SOCIOECONOMICOS.has(token) || GENERO.has(token) || MENORES.has(token) || PERSONAS.has(token)) return;
+    restos.push(token);
+  });
+  if (restos.length && color) return `${restos.join(' ')} ${color}`.slice(0, 100).trim();
+  if (color) return `${color} textura objeto fondo`;
+  if (motivo === 'genero') return 'hogar objeto';
+  if (motivo === 'socioeconomico') return 'paisaje objeto';
+  return 'textura abstracta color';
+}
+
 function evaluar(consulta) {
   const normalizada = normalizar(consulta);
   const motivo = motivoDe(new Set(tokens(normalizada)), normalizada);
+  const bloqueada = motivo === 'menores';
+  const filtrarPersonas = motivo === 'racial' || motivo === 'socioeconomico' || motivo === 'genero';
   return {
     normalizada,
-    bloqueada: Boolean(motivo),
+    bloqueada,
     motivo,
-    mensaje: MENSAJES[motivo] || '',
+    filtrarPersonas,
+    consultaPixabay: filtrarPersonas ? reencuadrar(normalizada, motivo) : String(consulta || '').replace(/\s+/g, ' ').trim(),
+    mensaje: bloqueada ? MENSAJE_MENORES : '',
   };
 }
 
@@ -104,4 +150,11 @@ function etiquetaTieneMenor(etiquetas) {
   return tokens(etiquetas).some((token) => MENORES.has(token));
 }
 
-module.exports = { evaluar, etiquetaTieneMenor, normalizar };
+function etiquetaDescartada(etiquetas, filtrarPersonas) {
+  const lista = tokens(etiquetas);
+  if (lista.some((token) => MENORES.has(token) || (RACIALES.has(token) && !COLORES.has(token)))) return true;
+  if (!filtrarPersonas) return false;
+  return lista.some((token) => PERSONAS.has(token) || ESTEREOTIPOS.has(token) || SOCIOECONOMICOS.has(token));
+}
+
+module.exports = { evaluar, etiquetaTieneMenor, etiquetaDescartada, normalizar };

@@ -145,7 +145,9 @@ async function responderBusqueda(req, res, persistir) {
 
   let imagenes;
   try {
-    imagenes = await buscarImagenes(lectura.consulta);
+    imagenes = await buscarImagenes(juicio.consultaPixabay, {
+      filtrarPersonas: juicio.filtrarPersonas,
+    });
   } catch (error) {
     console.error(mensajeSeguro(error));
     res.status(503).json({ mensaje: MENSAJE_IMAGENES });
@@ -163,7 +165,9 @@ async function responderBusqueda(req, res, persistir) {
     persistencia,
     mensaje: imagenes.length
       ? ''
-      : 'No quedaron fotos que pasen el filtro de contenido para esa búsqueda.',
+      : (juicio.filtrarPersonas
+        ? 'No quedaron fotos de objetos, colores o lugares para esa búsqueda.'
+        : 'No quedaron fotos que pasen el filtro de contenido para esa búsqueda.'),
   });
 }
 

@@ -1,4 +1,4 @@
-const { etiquetaTieneMenor } = require('./filtro');
+const { etiquetaDescartada } = require('./filtro');
 const { urlDePixabay } = require('./fichas');
 
 function urlSegura(valor, clave) {
@@ -23,7 +23,7 @@ function ficha(hit, clave) {
   };
 }
 
-async function buscarImagenes(consulta) {
+async function buscarImagenes(consulta, opciones = {}) {
   const clave = process.env.PIXABAY_API_KEY;
   if (!clave) {
     const error = new Error('sin-clave');
@@ -37,7 +37,7 @@ async function buscarImagenes(consulta) {
   url.searchParams.set('image_type', 'photo');
   url.searchParams.set('safesearch', 'true');
   url.searchParams.set('lang', 'es');
-  url.searchParams.set('per_page', '12');
+  url.searchParams.set('per_page', opciones.filtrarPersonas ? '60' : '12');
 
   let respuesta;
   try {
@@ -58,7 +58,8 @@ async function buscarImagenes(consulta) {
 
   const datos = await respuesta.json();
   return (datos.hits || [])
-    .filter((hit) => !etiquetaTieneMenor(hit.tags || ''))
+    .filter((hit) => !etiquetaDescartada(hit.tags || '', Boolean(opciones.filtrarPersonas)))
+    .slice(0, 12)
     .map((hit) => ficha(hit, clave))
     .filter(Boolean);
 }

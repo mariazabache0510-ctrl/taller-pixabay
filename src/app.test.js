@@ -29,17 +29,11 @@ async function sesion(port) {
   return { html, token: token && token[1], cookie };
 }
 
-test('la salud responde y BLACK no sale de la aplicación', async () => {
+test('la salud responde', async () => {
   await conServidor(async (port) => {
     const salud = await fetch(`http://127.0.0.1:${port}/health`);
     assert.equal(salud.status, 200);
     assert.equal(salud.headers.get('x-powered-by'), null);
-    const respuesta = await fetch(`http://127.0.0.1:${port}/api/buscar?q=BLACK`);
-    const datos = await respuesta.json();
-    assert.equal(respuesta.status, 200);
-    assert.equal(datos.bloqueada, true);
-    assert.equal(datos.motivo, 'racial');
-    assert.deepEqual(datos.imagenes, []);
   });
 });
 
@@ -48,10 +42,14 @@ test('poor, variantes y una búsqueda sin clave no revelan secretos', async () =
   delete process.env.PIXABAY_API_KEY;
   try {
     await conServidor(async (port) => {
-      const poor = await (await fetch(`http://127.0.0.1:${port}/api/buscar?q=${encodeURIComponent('poor people')}`)).json();
-      const variante = await (await fetch(`http://127.0.0.1:${port}/api/buscar?q=bl4ck`)).json();
-      assert.equal(poor.bloqueada, true);
-      assert.equal(variante.bloqueada, true);
+      const poor = await fetch(`http://127.0.0.1:${port}/api/buscar?q=${encodeURIComponent('poor people')}`);
+      const variante = await fetch(`http://127.0.0.1:${port}/api/buscar?q=bl4ck`);
+      const cuerpoPoor = await poor.json();
+      const cuerpoVariante = await variante.json();
+      assert.equal(poor.status, 503);
+      assert.equal(variante.status, 503);
+      assert.equal(cuerpoPoor.bloqueada, undefined);
+      assert.equal(JSON.stringify(cuerpoVariante).includes('bl4ck'), false);
       const nature = await fetch(`http://127.0.0.1:${port}/api/buscar?q=nature`);
       const datos = await nature.json();
       assert.equal(nature.status, 503);
